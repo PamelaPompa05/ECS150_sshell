@@ -454,7 +454,7 @@ void pipeline(struct Command *commands, int num_commands, char *cmd_copy, struct
         pid_t pid = fork();
         if(pid == 0){
             //if the first pipe has an input redirection
-            if(strcmp(commands[0].input, "\0")){
+            if(strcmp(commands[0].input, "\0") && (i == 0)){
                 dup2(commands[0].read_fd, STDIN_FILENO);
                 close(commands[0].read_fd);
             }
@@ -465,7 +465,7 @@ void pipeline(struct Command *commands, int num_commands, char *cmd_copy, struct
             }
             
             //if the last pipe has output redirection
-            if(!strcmp(commands[num_commands - 1].output, "\0")){
+            if(strcmp(commands[num_commands - 1].output, "\0") && (i == num_commands - 1)){
                 dup2(commands[num_commands - 1].write_fd, STDOUT_FILENO);
                 close(commands[num_commands - 1].write_fd);
             }
