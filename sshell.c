@@ -432,6 +432,11 @@ void singular_command(struct Command command, char *cmd_copy, struct Background 
         else{
             int status;
             waitpid(pid, &status, 0);
+
+            if(background_process->currently_executing == true){
+                check_background_processes(background_process);
+            }
+
             fprintf(stderr, "+ completed '%s' [%d]\n", cmd_copy, WEXITSTATUS(status));
             return;
         }
@@ -523,6 +528,10 @@ void pipeline(struct Command *commands, int num_commands, char *cmd_copy, struct
             exit_codes[i] = WEXITSTATUS(status);
         }
 
+        if(background_process->currently_executing == true){
+            check_background_processes(background_process);
+        }
+
         /*Completion message*/
         fprintf(stderr, "+ completed '%s' ", cmd_copy);
         for (int i = 0; i < num_commands; i++) {
@@ -577,14 +586,18 @@ int main()
         int num_commands = extract_tokens(cmd, commands, &background_process); //extract the commands, and their respective arguments; returns the amount of commands extracted
         if(num_commands < 0){ continue; } //if this is negative, it means an error occured and we should reprompt the shell instead of executing a command
 
-        if(background_process.currently_executing == true){
-            check_background_processes(&background_process); //check to see if it ended
-        }                                                   
+        //if(background_process.currently_executing == true){
+        //    check_background_processes(&background_process); //check to see if it ended
+        //}                                                   
         
         if(num_commands == 1){
             singular_command(commands[0], cmd_copy, &background_process); //only execute one command (which means we can execute built-in commands too)
         } else if (num_commands > 1){
             pipeline(commands, num_commands, cmd_copy, &background_process); //execute the pipeline (no built-in commands)
+        } else if(num_commands == 0){
+            if(background_process.currently_executing == true){
+                check_background_processes(&background_process); //check to see if it ended
+            }   
         }
 
         for(int i = 0; i < num_commands; i++) {
@@ -609,93 +622,5 @@ int main()
 // https://stackoverflow.com/questions/1726302/remove-spaces-from-a-string-in-c looking for ways to remove whitespace
 // https://www.geeksforgeeks.org/strcmp-in-c/ looking for ways to compare 2 strings to see if theyre equal
 
-/*int count_symbols(char *cmd_copy, char symbol){
-    int symbol_count = 0;
 
-    for(int i = 0; cmd_copy[i] != '\0'; i++){
-        if(cmd_copy[i] == symbol){
-            symbol_count++;
-        }
-    }
-
-    return symbol_count;
-}
-*/
-
-     /*NOTE: I was working on this but you can ignore this cuz idk if we can implement it lol
-        Count the occurences of symbols such as "|", "<", ">"
-        //Goal is to see if there is a missing command (true if the amount of symbols is >= amount of commands)
-        int pipe_symbol_num = count_symbols(cmd_copy, '|');
-        int output_symbol_num = count_symbols(cmd_copy, '>');
-        int input_symbol_num = count_symbols(cmd_copy, '<');
-        if (pipe_symbol_num >= num_commands || output_symbol_num >= num_commands || input_symbol_num >= num_commands){
-            fprintf(stderr, "Error: missing command\n");
-            continue; //don't execute the command, go to top of while loop
-        }*/
-
-
-/*
-
-int check_arguments(struct Command command, int piped_output){ //checks if we have file output redirection, and if we do are the arguments correct or not
-    int i = 0;//index number arguments 
-    int fd = 0;//file descriptor 
-    while(command.arguments[i] != NULL){ //until arguments haven't finished
-        if(strcmp(command.arguments[i], ">") == 0){ //we check to see if the argument is > 
-            if(command.arguments[i+1] == NULL){ //if it is, the argument after has to exist because it's the file name
-                fprintf(stderr, "Error: no output file\n"); //if it doesn't, error is printed 
-                return(-1);
-            }
-            else if(piped_output){ //if sub command is the middle of a pipe, it's not allowed to have file output redirection
-                fprintf(stderr, "Error: mislocated output redirection\n"); //error that gets printed 
-                return(-1);
-            }
-            fd = open(command.arguments[i+1], O_WRONLY, O_CREAT); //we try to open the file
-            if(fd < 0){ //if file could not be opened
-                fprintf(stderr, "Error: cannot open output file\n"); //error gets printed 
-                return(-1);
-            }
-        }
-        i++; //next argument 
-    }
-    return fd; //return file descriptor 
-
-}
-
-
-
- bool implement_background = false; 
-    int need_background_process = background_process_function(cmd);
-    if(need_background_process == 0){
-        implement_background = true;
-    }
-    else if(need_background_process == -1){
-        return -1; //error; ambersand is in wrong location
-    }
-
-
-
-    int background_process_function(char *cmd){
-        /returns 0 if a background process will be implemented
-          returns -1 if there will not be a background process due to error in location 
-          returns -2 if there will not be a background process due to there not being any ambersands
-        
-        int string_length = strlen(cmd);
-    
-        while (string_length > 0 && isspace(cmd[string_length - 1])) {
-            cmd[string_length - 1] = '\0'; // remove the trailing/end whitespace (in order to see if the ambersand is the last character)
-            string_length--;
-        }
-    
-        if(strchr(cmd, '&') != NULL){ //if there is an ambersand in the string
-            if(strchr(cmd, '&') != cmd + string_length - 1){ //if the ambersand is not in last place (cmd + string_length -1 because this is the addresses of string_length -1 )
-                fprintf(stderr, "Error: mislocated background sign\n");
-                return -1;
-            }
-            return 0; //is at the end and will be implemented
-        }
-        return -2;
-    }
-
-
-    //add sources for fd open + libraries
-*/
+//add sources for fd open + libraries
