@@ -30,39 +30,46 @@ struct Command {
 
 struct Background {
     pid_t pids[4]; //up to 4 pids if the background process is a pipeline
+    int exit_codes[4];
     char command_string[CMDLINE_MAX]; //this holds the string of what the background process is
     int background_commands; //to keep track of how many commands are part of the background process
     bool currently_executing; //true if yes false if no
+    int completed_processes;
 };
 
 void check_background_processes(struct Background* background_process){
     int status; 
     pid_t pid_array[4]; //up to 4 commands in a pipeline
-    int exit_codes[4];
-    int completed_processes = 0;
 
     /*Check to see if the background process is completed*/
+
     for(int i = 0; i < background_process->background_commands; i++){
+        if(background_process->pids[i] == -1){ //this command already finished
+            continue; //look at next command
+        }
+
         pid_array[i] = waitpid(background_process->pids[i], &status, WNOHANG);
+
         if(pid_array[i] > 0){ //process actually finished
-            completed_processes++;
-            exit_codes[i] = WEXITSTATUS(status);
+            background_process->completed_processes++;
+            background_process->exit_codes[i] = WEXITSTATUS(status);
+            background_process->pids[i] = -1; //mark as finished
         }else { //not completed yet
-            pid_array[i] = -1;
             return;
         }
     }
 
-    if(completed_processes == background_process->background_commands){ //if all commands are ready
+    if(background_process->completed_processes == background_process->background_commands){ //if all commands are ready
         fprintf(stderr, "+ completed '%s' ", background_process->command_string);
         for(int i = 0; i < background_process->background_commands; i++){
-            fprintf(stderr, "[%d]", exit_codes[i]);
+            fprintf(stderr, "[%d]", background_process->exit_codes[i]);
             background_process->pids[i] = -1; // reset PID
         }
         fprintf(stderr, "\n");
         background_process->command_string[0] = '\0'; // clear the command string
         background_process->currently_executing = false; //reset the variable to false
         background_process->background_commands = 0;
+        background_process->completed_processes = 0;
     }
     return;
 }
@@ -553,6 +560,7 @@ int main()
     background_process.currently_executing = false; //initialize to false
     background_process.pids[0] = -1; //pid hasnt been initialized yet
     commands[0].need_background_command = false;
+    background_process.completed_processes = 0;
 
     while (1) {
 
