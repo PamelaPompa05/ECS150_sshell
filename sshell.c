@@ -586,10 +586,6 @@ int main()
         int num_commands = extract_tokens(cmd, commands, &background_process); //extract the commands, and their respective arguments; returns the amount of commands extracted
         if(num_commands < 0){ continue; } //if this is negative, it means an error occured and we should reprompt the shell instead of executing a command
 
-        //if(background_process.currently_executing == true){
-        //    check_background_processes(&background_process); //check to see if it ended
-        //}                                                   
-        
         if(num_commands == 1){
             singular_command(commands[0], cmd_copy, &background_process); //only execute one command (which means we can execute built-in commands too)
         } else if (num_commands > 1){
@@ -601,9 +597,9 @@ int main()
         }
 
         for(int i = 0; i < num_commands; i++) {
-            for(int j = 0; commands[i].arguments[j] != NULL; j++) { // Check before freeing
-                    //free(commands[i].arguments[j]);
-                    //commands[i].arguments[j] = NULL; // Prevent double-free
+            for(int j = 0; commands[i].arguments[j] != NULL; j++) { //check before freeing
+                    free(commands[i].arguments[j]);
+                    commands[i].arguments[j] = NULL; //prevent double-free
             }
         }
     }
@@ -621,6 +617,6 @@ int main()
 // https://www.geeksforgeeks.org/strchr-in-c/ I was looking for a function that can detect a specific character in a string 
 // https://stackoverflow.com/questions/1726302/remove-spaces-from-a-string-in-c looking for ways to remove whitespace
 // https://www.geeksforgeeks.org/strcmp-in-c/ looking for ways to compare 2 strings to see if theyre equal
-
-
-//add sources for fd open + libraries
+// https://stackoverflow.com/questions/15110642/how-to-fdopen-as-open-with-the-same-mode-and-flags I wanted an idea on how to write my call to open for write
+// https://www.geeksforgeeks.org/input-output-system-calls-c-create-open-close-read-write/
+// https://www.geeksforgeeks.org/pointer-array-array-pointer/
